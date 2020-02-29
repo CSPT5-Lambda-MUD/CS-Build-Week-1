@@ -97,7 +97,7 @@ DATABASES = {
         'PASSWORD': config('PGPASS'),
         'HOST': config('PGHOST'),
         'PORT': config('PGPORT')
-    }
+    },
     'test': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
