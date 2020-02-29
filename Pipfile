@@ -1,7 +1,9 @@
 [[source]]
+name = "pypi"
 url = "https://pypi.org/simple"
 verify_ssl = true
-name = "pypi"
+
+[dev-packages]
 
 [packages]
 django = "*"
@@ -15,7 +17,5 @@ gunicorn = "*"
 django-heroku = "*"
 django-rest-api = "*"
 
-[dev-packages]
-
 [requires]
-python_version = "3.7"
+python_version = "3.8"
