@@ -91,6 +91,14 @@ WSGI_APPLICATION = 'adv_project.wsgi.application'
 
 DATABASES = {
     'default': {
+        'ENGINE': config('ENGINE'),
+        'NAME': config('PGNAME'),
+        'USER': config('PGUSER'),
+        'PASSWORD': config('PGPASS'),
+        'HOST': config('PGHOST'),
+        'PORT': config('PGPORT')
+    },
+    'test': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
