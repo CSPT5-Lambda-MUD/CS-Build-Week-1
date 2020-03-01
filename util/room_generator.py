@@ -1,5 +1,5 @@
 from random import random
-from math
+import math
 from .roomList import names
 
 class Room:
@@ -26,26 +26,21 @@ class Room:
 
 class World:
     def __init__(self):
-        rooms = []
-        players = ()
+        self.rooms = []
+        self.players = ()
 
     def generate_rooms(self, count):
-        count_iter = count
-        create_start_room = Room(1, 'Foyer', 'A dingy foyer where the floor is filled with torn papers of an unknown book. What happened here?', None, None, None, None, None)
-        count_iter -= 1
-        current_room = create_start_room
-
-        print('testing')
+        start_room = Room(0, 'Foyer', 'A dingy foyer where the floor is filled with torn papers of an unknown book. What happened here?', None, None, None, None, None)
+        # count_iter -= 1
+        current_room = start_room
 
         # create rooms by looping up to count number
-        for i in range(count_iter):
+        for i in range(1, count):
             random_numb = random()
             # Create room
-            new_room = Room(i + 1, room.get(room[math.floor(i * random_numb)]), room[math.floor(i // random_numb)], None, None, current_room, None, None)
+            new_room = Room(i, names[math.floor(i * random_numb)][0], names[math.floor(i // random_numb)][1], None, None, current_room, None, None)
             # insert room to world
-            self.room.append(new_room)
-            # increment counter - 1
-            count_iter -= 1
+            self.rooms.append(new_room)
             # change current_room
             current_room = new_room
 
