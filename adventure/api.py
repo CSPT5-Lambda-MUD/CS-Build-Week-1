@@ -31,7 +31,7 @@ def move(request):
     player = request.user.player
     player_id = player.id
     player_uuid = player.uuid
-    data = json.loads(request.body)
+    data = request.data
     direction = data['direction']
     room = player.room()
     nextRoomID = None
@@ -65,3 +65,14 @@ def move(request):
 def say(request):
     # IMPLEMENT
     return JsonResponse({'error':"Not yet implemented"}, safe=True, status=500)
+
+
+@api_view(["GET"])
+def room(request):
+    all_rooms = Room.objects.all()
+    room_list = []
+    for room in all_rooms:
+        print(room)
+        # Adds each room object to an array in a better format
+        room_list.append({'id': room.id, 'title': room.title, 'desc': room.description, 'n': room.n_to, 's': room.s_to, 'e': room.e_to, 'w': room.w_to})
+    return JsonResponse({'rooms': room_list}, safe=True)
