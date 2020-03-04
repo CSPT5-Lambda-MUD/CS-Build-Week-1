@@ -17,17 +17,18 @@ class World:
         current_room = start_room
 
         # create rooms by looping up to count number
-        for i in range(count - 1):
+        for i in range(1, count):
             random_room = names[math.floor(len(names) * random())]
             print(i, random_room)
             # Create room
             new_room = Room(
                 title = random_room[0],
-                description = random_room[1]
+                description = random_room[1],
+                w_to = current_room.id
             )
+            new_room.save()
             # mark new_to as next room
             current_room.connectRooms(new_room, 'e')
-            new_room.save()
             # change current_room
             current_room = new_room
 
