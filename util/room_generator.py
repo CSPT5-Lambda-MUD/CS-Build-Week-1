@@ -16,9 +16,7 @@ class Room:
     def __str__(self):
         print(f'${self.name} is ${self.description}')
 
-    def connect_room(self, to_room, dir):
-        # direction = dir + '_room'
-        # self.direction = to_room
+    def connect_room(self, connecting_room, dir):
         reverse_dirs = {"n": "s", "s": "n", "e": "w", "w": "e"}
         reverse_dir = reverse_dirs[dir]
         setattr(self, f"{dir}_to", connecting_room)
@@ -31,14 +29,19 @@ class World:
 
     def generate_rooms(self, count):
         start_room = Room(0, 'Foyer', 'A dingy foyer where the floor is filled with torn papers of an unknown book. What happened here?', None, None, None, None, None)
+        # insert start room
+        self.rooms.append(start_room)
         # count_iter -= 1
         current_room = start_room
 
         # create rooms by looping up to count number
-        for i in range(1, count):
-            random_numb = random()
+        for i in range(count - 1):
+            random_room = names[math.floor(len(names) * random())]
+            print(i, random_room)
             # Create room
-            new_room = Room(i, names[math.floor(i * random_numb)][0], names[math.floor(i // random_numb)][1], None, None, current_room, None, None)
+            new_room = Room(i, random_room[0], random_room[1], None, None, None, None, current_room)
+            # mark new_room as next room
+            current_room.e_room = new_room
             # insert room to world
             self.rooms.append(new_room)
             # change current_room
