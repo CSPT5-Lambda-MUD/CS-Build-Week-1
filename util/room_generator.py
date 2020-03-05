@@ -19,7 +19,6 @@ class World:
         # create rooms by looping up to count number
         for i in range(1, count):
             random_room = names[math.floor(len(names) * random())]
-            print(i, random_room)
             # Create room
             new_room = Room(
                 title = random_room[0],
@@ -31,6 +30,8 @@ class World:
             current_room.connectRooms(new_room, 'e')
             # change current_room
             current_room = new_room
+
+        print(f"{count} rooms created. Enjoy!")
 
     def player_tracker(self, user):
         if players[user]:
