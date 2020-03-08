@@ -21,42 +21,53 @@ class World:
         '''
         Fill up the grid, bottom to top, in a zig-zag pattern
         '''
-
+        
         room_count = 1
         dirs = ["n", "s", "e", "w"]
         previous_room = None
 
         # These can be modified to change generation pattern
         # min_sides_available checks if there are at least two directions we can go from current room
-        min_sides_available = 1
+        min_sides_available = 2
         start_x = size_x // 2
         start_y = size_y // 2
 
+        ##################################################
+
         # Initialize the grid
         def init_world():
+            # pull our variables from parent function
             nonlocal previous_room
             nonlocal room_count
             nonlocal start_x
             nonlocal start_y
 
+            # Make our grid
             self.grid = [None] * size_y
             self.width = size_x
             self.height = size_y
             for i in range( len(self.grid) ):
                 self.grid[i] = [None] * size_x
 
-            # Start at 1 because we already have an initial room created
+            # Start at 2 because we already have an initial room created
             room_count = 2
 
-            # Start with 1 room
+            # Create starter room
             room = Room(id=1, title="Starting room", description="First room", x=start_x, y=start_y)
             room.save()
             self.grid[start_y][start_x] = room
             previous_room = room
-            
+        
+        ##################################################
 
+        # Create our grid
         init_world()
 
+        ##################################################
+
+        # Takes in x, y and checks how make availble
+        # spots there are around x,y position on our grid
+        # returns how many spots are found
         def check_spots_around(x, y):
             good_spots = 0
 
@@ -74,10 +85,13 @@ class World:
                 good_spots += 1
             
             return good_spots
+        
+        ##################################################
 
+        # Takes in x, y and a direction to check if
+        # we can place a room at this position + 1 in direction
         def check_valid_spot(direct, x, y):
             # north
-
             if direct == "n" and y + 1 < size_y - 1:
                 if self.grid[y + 1][x] == None:
                     return True
@@ -96,6 +110,10 @@ class World:
             
             return False
 
+        ##################################################
+        
+        # Takes in x,y position and goes 1 space in the direction
+        # and places room in that spot
         def create_new_room(x, y, direct, title, desc):
             nonlocal previous_room
             
@@ -112,7 +130,7 @@ class World:
             self.grid[new_room.y][new_room.x] = new_room
 
             # Connect this room to the previous one
-
+            # so we can go back and forth
             old_room_dir = ""
             if direct == "n":
                 old_room_dir = "s"
@@ -126,35 +144,57 @@ class World:
             if direct == "w":
                 old_room_dir = "e"
             
-            print(direct)
-            print(old_room_dir)
+            # Connect rooms in each direction
             new_room.connectRooms(previous_room, old_room_dir)
             previous_room.connectRooms(new_room, direct)
+
+            # new room is now previous_room next loop
             previous_room = new_room
             
+        ##################################################
+        ##################################################
+        ##################################################
         
         # While loop to generate num_rooms amount of rooms
-        
         while room_count < num_rooms:
-            # While loop to find a place to put a new room
             self.print_rooms()
-            times_tried = 0
+            
+            # Keep track of attempts made to find a random space
             finding_space = True
-
+            dirs_tried = []
 
             while finding_space:
                 
-                if times_tried > 3:
-                    init_world()
-                    
                 # Choose a direction at random
                 rand_dir = random.choice(dirs)
+                
+                # Check if random direction has already been tried
+                # if so, loop again and get another rand_dir
+                if rand_dir in dirs_tried:
+                    continue
+
+                # If there are three or more directions in our tried list, that means there are no more directions left to try
+                # we check for 3 because 1 is assumed to be taken by the previous room, we subtract that from our 4 directions
+                if len(dirs_tried) >= 3:
+                    init_world()
+                
                 # Check direction and check if valid [y][x] positition
                 # since we are generating a room north, check if we can move any higher on the grid
-                if rand_dir == "n" and check_valid_spot(rand_dir, previous_room.x, previous_room.y) == True:
-                    if check_spots_around(previous_room.x, previous_room.y + 1) < min_sides_available:
-                        times_tried += 1
+                if rand_dir == "n":
+                    
+                    # Check if there is room here
+                    if check_valid_spot(rand_dir, previous_room.x, previous_room.y) == True:
+                        # If so, check if we have a minimum available spots to create a room
+                        if check_spots_around(previous_room.x, previous_room.y + 1) < min_sides_available:
+                            # If the minimum spots are not available, this is not a valid direction
+                            # Add rand_dir to our dirs_tried list so we don't attempt it again
+                            dirs_tried.append(rand_dir)
+                            continue
+                    else:
+                        # If this wasn't a valid direction, add it to our attempted list
+                        dirs_tried.append(rand_dir)
                         continue
+                
 
                     # If empty, create room at [y + 1][x]
                     create_new_room(previous_room.x, previous_room.y, rand_dir, "Northern Room", "Room to the north")
@@ -164,9 +204,13 @@ class World:
                     continue
 
                 # Same as above
-                elif rand_dir == "s" and check_valid_spot(rand_dir, previous_room.x, previous_room.y) == True:
-                    if check_spots_around(previous_room.x, previous_room.y - 1) < min_sides_available:
-                        times_tried += 1
+                if rand_dir == "s":
+                    if check_valid_spot(rand_dir, previous_room.x, previous_room.y) == True:
+                        if check_spots_around(previous_room.x, previous_room.y - 1) < min_sides_available:
+                            dirs_tried.append(rand_dir)
+                            continue
+                    else:
+                        dirs_tried.append(rand_dir)
                         continue
 
                     # If empty, create room at [y + 1][x]
@@ -176,9 +220,13 @@ class World:
                     finding_space = False
                     continue
 
-                elif rand_dir == "e" and check_valid_spot(rand_dir, previous_room.x, previous_room.y) == True:
-                    if check_spots_around(previous_room.x + 1, previous_room.y) < min_sides_available:
-                        times_tried += 1
+                if rand_dir == "e":
+                    if check_valid_spot(rand_dir, previous_room.x, previous_room.y) == True:
+                        if check_spots_around(previous_room.x + 1, previous_room.y) < min_sides_available:
+                            dirs_tried.append(rand_dir)
+                            continue
+                    else:
+                        dirs_tried.append(rand_dir)
                         continue
 
                     # If empty, create room at [y + 1][x]
@@ -188,9 +236,13 @@ class World:
                     finding_space = False
                     continue
 
-                elif rand_dir == "w" and check_valid_spot(rand_dir, previous_room.x, previous_room.y) == True:
-                    if check_spots_around(previous_room.x - 1, previous_room.y) < min_sides_available:
-                        times_tried += 1
+                if rand_dir == "w":
+                    if check_valid_spot(rand_dir, previous_room.x, previous_room.y) == True:
+                        if check_spots_around(previous_room.x - 1, previous_room.y) < min_sides_available:
+                            dirs_tried.append(rand_dir)
+                            continue
+                    else:
+                        dirs_tried.append(rand_dir)
                         continue
 
                     # If empty, create room at [y + 1][x]
@@ -203,6 +255,10 @@ class World:
             
             # Added a room so we increase our count
             room_count += 1
+
+        ##################################################
+        ##################################################
+        ##################################################
             
 
     def print_rooms(self):
