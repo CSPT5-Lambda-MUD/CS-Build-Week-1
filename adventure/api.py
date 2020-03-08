@@ -22,87 +22,185 @@ class World:
         Fill up the grid, bottom to top, in a zig-zag pattern
         '''
 
-        # Initialize the grid
-        self.grid = [None] * size_y
-        self.width = size_x
-        self.height = size_y
-        for i in range( len(self.grid) ):
-            self.grid[i] = [None] * size_x
-        
-        dirs = ["n", "s", "e", "w"]
-
-        # Start in center of generated grid
-        x = size_x // 2 
-        y = size_y // 2
-
-        # Start at 1 because we already have an initial room created
         room_count = 1
+        dirs = ["n", "s", "e", "w"]
+        previous_room = None
 
-        # Start with room at the center of the grid
-        room = Room(id=0, title="Starting room", description="First room", x=x, y=y)
-        room.save()
-        self.grid[y][x] = room
-        previous_room = room
+        # These can be modified to change generation pattern
+        # min_sides_available checks if there are at least two directions we can go from current room
+        min_sides_available = 1
+        start_x = size_x // 2
+        start_y = size_y // 2
 
+        # Initialize the grid
+        def init_world():
+            nonlocal previous_room
+            nonlocal room_count
+            nonlocal start_x
+            nonlocal start_y
+
+            self.grid = [None] * size_y
+            self.width = size_x
+            self.height = size_y
+            for i in range( len(self.grid) ):
+                self.grid[i] = [None] * size_x
+
+            # Start at 1 because we already have an initial room created
+            room_count = 2
+
+            # Start with 1 room
+            room = Room(id=1, title="Starting room", description="First room", x=start_x, y=start_y)
+            room.save()
+            self.grid[start_y][start_x] = room
+            previous_room = room
+            
+
+        init_world()
+
+        def check_spots_around(x, y):
+            good_spots = 0
+
+            # north
+            if y + 1 < size_y - 1 and self.grid[y + 1][x] == None:
+                good_spots += 1
+            # south
+            if y - 1 > 0 and self.grid[y - 1][x] == None:
+                good_spots += 1
+            # east
+            if x + 1 < size_x - 1 and self.grid[y][x + 1] == None:
+                good_spots += 1
+            # west
+            if x - 1 > 0 and self.grid[y][x - 1] == None:
+                good_spots += 1
+            
+            return good_spots
+
+        def check_valid_spot(direct, x, y):
+            # north
+
+            if direct == "n" and y + 1 < size_y - 1:
+                if self.grid[y + 1][x] == None:
+                    return True
+            # south    
+            elif direct == "s" and y - 1 > 0:
+                if self.grid[y - 1][x] == None:
+                    return True
+            # east
+            elif direct == "e" and x + 1 < size_x - 1:
+                if self.grid[y][x + 1] == None:
+                    return True
+            # west
+            elif direct == "w" and x - 1 > 0:
+                if self.grid[y][x - 1] == None:
+                    return True
+            
+            return False
+
+        def create_new_room(x, y, direct, title, desc):
+            nonlocal previous_room
+            
+            if direct == "n":
+                new_room = Room(id=room_count, title=title, description=desc, x=x, y=y + 1)
+            elif direct == "s":
+                new_room = Room(id=room_count, title=title, description=desc, x=x, y=y - 1)
+            elif direct == "e":
+                new_room = Room(id=room_count, title=title, description=desc, x=x + 1, y=y)
+            elif direct == "w":
+                new_room = Room(id=room_count, title=title, description=desc, x=x - 1, y=y)
+            
+            new_room.save()
+            self.grid[new_room.y][new_room.x] = new_room
+
+            # Connect this room to the previous one
+
+            old_room_dir = ""
+            if direct == "n":
+                old_room_dir = "s"
+
+            if direct == "s":
+                old_room_dir = "n"
+
+            if direct == "e":
+                old_room_dir = "w"
+
+            if direct == "w":
+                old_room_dir = "e"
+            
+            print(direct)
+            print(old_room_dir)
+            new_room.connectRooms(previous_room, old_room_dir)
+            previous_room.connectRooms(new_room, direct)
+            previous_room = new_room
+            
+        
         # While loop to generate num_rooms amount of rooms
+        
         while room_count < num_rooms:
-
             # While loop to find a place to put a new room
+            self.print_rooms()
+            times_tried = 0
             finding_space = True
-            while finding_space:
 
+
+            while finding_space:
+                
+                if times_tried > 3:
+                    init_world()
+                    
                 # Choose a direction at random
                 rand_dir = random.choice(dirs)
-                
                 # Check direction and check if valid [y][x] positition
                 # since we are generating a room north, check if we can move any higher on the grid
-                if rand_dir == "n" and previous_room.y + 1 < size_y - 1:
-                    
-                    # Check if space is empty
-                    if self.grid[previous_room.y + 1][previous_room.x] == None:
-                        # If empty, create room at [y + 1][x]
-                        new_room = Room(id=room_count, title="Northern Room", description="Room to the north", x=previous_room.x, y=previous_room.y + 1)
-                        new_room.save()
-                        self.grid[new_room.y][new_room.x] = new_room
+                if rand_dir == "n" and check_valid_spot(rand_dir, previous_room.x, previous_room.y) == True:
+                    if check_spots_around(previous_room.x, previous_room.y + 1) < min_sides_available:
+                        times_tried += 1
+                        continue
 
-                        # Connect this room to the previous one
-                        previous_room.connectRooms(new_room, rand_dir)
-                        previous_room = new_room
-                        
-                        # We found a space so stop looking
-                        finding_space = False
+                    # If empty, create room at [y + 1][x]
+                    create_new_room(previous_room.x, previous_room.y, rand_dir, "Northern Room", "Room to the north")
+                    
+                    # We found a space so stop looking
+                    finding_space = False
+                    continue
 
                 # Same as above
-                elif rand_dir == "s" and previous_room.y - 1 > 0:
+                elif rand_dir == "s" and check_valid_spot(rand_dir, previous_room.x, previous_room.y) == True:
+                    if check_spots_around(previous_room.x, previous_room.y - 1) < min_sides_available:
+                        times_tried += 1
+                        continue
 
-                    if self.grid[previous_room.y - 1][previous_room.x] == None:
-                        new_room = Room(id=room_count, title="Southern Room", description="Room to the south", x=previous_room.x, y=previous_room.y - 1)
-                        new_room.save()
-                        self.grid[new_room.y][new_room.x] = new_room
-                        previous_room.connectRooms(new_room, rand_dir)
-                        previous_room = new_room
-                        finding_space = False
+                    # If empty, create room at [y + 1][x]
+                    create_new_room(previous_room.x, previous_room.y, rand_dir, "Southern Room", "Room to the south")
+                    
+                    # We found a space so stop looking
+                    finding_space = False
+                    continue
 
-                elif rand_dir == "e" and previous_room.x + 1 < size_x - 1:
+                elif rand_dir == "e" and check_valid_spot(rand_dir, previous_room.x, previous_room.y) == True:
+                    if check_spots_around(previous_room.x + 1, previous_room.y) < min_sides_available:
+                        times_tried += 1
+                        continue
 
-                    if self.grid[previous_room.y][previous_room.x + 1] == None:
-                        new_room = Room(id=room_count, title="Eastern Room", description="Room to the east", x=previous_room.x + 1, y=previous_room.y)
-                        new_room.save()
-                        self.grid[new_room.y][new_room.x] = new_room
-                        previous_room.connectRooms(new_room, rand_dir)
-                        previous_room = new_room
-                        finding_space = False
+                    # If empty, create room at [y + 1][x]
+                    create_new_room(previous_room.x, previous_room.y, rand_dir, "Eastern Room", "Room to the east")
+                    
+                    # We found a space so stop looking
+                    finding_space = False
+                    continue
 
-                elif rand_dir == "w" and previous_room.x -1 > 0:
+                elif rand_dir == "w" and check_valid_spot(rand_dir, previous_room.x, previous_room.y) == True:
+                    if check_spots_around(previous_room.x - 1, previous_room.y) < min_sides_available:
+                        times_tried += 1
+                        continue
 
-                    if self.grid[previous_room.y][previous_room.x - 1] == None:
-                        new_room = Room(id=room_count, title="Western Room", description="Room to the west", x=previous_room.x - 1, y=previous_room.y)
-                        new_room.save()
-                        self.grid[new_room.y][new_room.x] = new_room
-                        previous_room.connectRooms(new_room, rand_dir)
-                        previous_room = new_room
-                        finding_space = False
-                        
+                    # If empty, create room at [y + 1][x]
+                    create_new_room(previous_room.x, previous_room.y, rand_dir, "Western Room", "Room to the west")
+                    
+                    # We found a space so stop looking
+                    finding_space = False
+                    continue
+
+            
             # Added a room so we increase our count
             room_count += 1
             
@@ -157,16 +255,21 @@ class World:
 
         # Add bottom border
         str += "# " * ((3 + self.width * 5) // 2) + "\n"
-
+        
         # Print string
         print(str)
 
+Room.objects.all().delete()
 w = World()
-num_rooms = 10
+num_rooms = 100
 width = 20
 height = 20
 w.generate_rooms(width, height, num_rooms)
-w.print_rooms()
+
+players=Player.objects.all()
+for p in players:
+  p.currentRoom=Room.objects.first().id
+  p.save()
 
 
 # instantiate pusher
@@ -217,10 +320,10 @@ def move(request):
         #     pusher.trigger(f'p-channel-{p_uuid}', u'broadcast', {'message':f'{player.user.username} has walked {dirs[direction]}.'})
         # for p_uuid in nextPlayerUUIDs:
         #     pusher.trigger(f'p-channel-{p_uuid}', u'broadcast', {'message':f'{player.user.username} has entered from the {reverse_dirs[direction]}.'})
-        return JsonResponse({'name':player.user.username, 'title':nextRoom.title, 'description':nextRoom.description, 'players':players, 'error_msg':""}, safe=True)
+        return JsonResponse({'name':player.user.username, 'room_id': nextRoom.id,'title':nextRoom.title, 'description':nextRoom.description, 'players':players, 'error_msg':""}, safe=True)
     else:
         players = room.playerNames(player_id)
-        return JsonResponse({'name':player.user.username, 'title':room.title, 'description':room.description, 'players':players, 'error_msg':"You cannot move that way."}, safe=True)
+        return JsonResponse({'name':player.user.username, 'room_id': room.id, 'title':room.title, 'description':room.description, 'players':players, 'error_msg':"You cannot move that way."}, safe=True)
 
 
 @csrf_exempt
@@ -232,35 +335,35 @@ def say(request):
 @csrf_exempt
 @api_view(["GET"])
 def room(request):
+    reverse_grid = list(w.grid)
+    reverse_grid.reverse()
     new_list = []
-    for x in range(len(w.grid)):
-        for y in range(len(w.grid[x])):
-            if w.grid[x][y] != None:
-                if request.user.player.currentRoom == w.grid[x][y].id:
+    for x in range(len(reverse_grid)):
+        for y in range(len(reverse_grid[x])):
+            if reverse_grid[x][y] != None:
+                if request.user.player.currentRoom == reverse_grid[x][y].id:
                     new_list.append({
-                        "name": w.grid[x][y].title,
-                        "n" : w.grid[x][y].n_to,
-                        "s" : w.grid[x][y].s_to,
-                        "e" : w.grid[x][y].e_to,
-                        "w" : w.grid[x][y].w_to,
-                        "x" : w.grid[x][y].x,
-                        "y" : w.grid[x][y].y,
+                        "name": reverse_grid[x][y].title,
+                        "n" : reverse_grid[x][y].n_to,
+                        "s" : reverse_grid[x][y].s_to,
+                        "e" : reverse_grid[x][y].e_to,
+                        "w" : reverse_grid[x][y].w_to,
+                        "x" : reverse_grid[x][y].x,
+                        "y" : reverse_grid[x][y].y,
                         "current_room": True
                     })
                 else:
                     new_list.append({
-                        "name": w.grid[x][y].title,
-                        "n" : w.grid[x][y].n_to,
-                        "s" : w.grid[x][y].s_to,
-                        "e" : w.grid[x][y].e_to,
-                        "w" : w.grid[x][y].w_to,
-                        "x" : w.grid[x][y].x,
-                        "y" : w.grid[x][y].y,
+                        "name": reverse_grid[x][y].title,
+                        "n" : reverse_grid[x][y].n_to,
+                        "s" : reverse_grid[x][y].s_to,
+                        "e" : reverse_grid[x][y].e_to,
+                        "w" : reverse_grid[x][y].w_to,
+                        "x" : reverse_grid[x][y].x,
+                        "y" : reverse_grid[x][y].y,
                         "current_room": False
                 })
             else:
                 new_list.append("0")
-
-    new_list.reverse()
     return JsonResponse({'rooms': new_list}, safe=True)
 
