@@ -55,7 +55,7 @@ class World:
             room_count = 1
 
             # Create starter room
-            room = Room(id=1, title="Starting room", description="First room", x=start_x, y=start_y)
+            room = Room(title="Starting room", description="First room", x=start_x, y=start_y)
             room.save()
             self.grid[start_y][start_x] = room
             previous_room = room
