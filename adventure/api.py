@@ -319,17 +319,17 @@ class World:
         # Print string
         print(str)
 
-w = World()
-num_rooms = 100
-width = 20
-height = 20
-w.generate_rooms(width, height, num_rooms)
-w.print_rooms()
+# w = World()
+# num_rooms = 100
+# width = 20
+# height = 20
+# w.generate_rooms(width, height, num_rooms)
+# w.print_rooms()
 
-players=Player.objects.all()
-for p in players:
-  p.currentRoom=Room.objects.first().id
-  p.save()
+# players=Player.objects.all()
+# for p in players:
+#   p.currentRoom=Room.objects.first().id
+#   p.save()
 
 
 # instantiate pusher
