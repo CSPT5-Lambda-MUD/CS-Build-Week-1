@@ -42,7 +42,7 @@ class World:
             nonlocal start_x
             nonlocal start_y
             
-            # Room.objects.all().delete()
+            Room.objects.all().delete()
 
             # Make our grid
             self.grid = [None] * size_y
