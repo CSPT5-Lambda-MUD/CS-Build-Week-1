@@ -41,6 +41,8 @@ class World:
             nonlocal room_count
             nonlocal start_x
             nonlocal start_y
+            
+            Room.objects.all().delete()
 
             # Make our grid
             self.grid = [None] * size_y
@@ -50,7 +52,7 @@ class World:
                 self.grid[i] = [None] * size_x
 
             # Start at 2 because we already have an initial room created
-            room_count = 2
+            room_count = 1
 
             # Create starter room
             room = Room(id=1, title="Starting room", description="First room", x=start_x, y=start_y)
@@ -156,8 +158,9 @@ class World:
         ##################################################
         
         # While loop to generate num_rooms amount of rooms
+        print("Generating map, this may take a minute...")
         while room_count < num_rooms:
-            self.print_rooms()
+            # self.print_rooms()
             
             # Keep track of attempts made to find a random space
             finding_space = True
@@ -167,21 +170,22 @@ class World:
                 
                 # Choose a direction at random
                 rand_dir = random.choice(dirs)
+
+                # If there are three or more directions in our tried list, that means there are no more directions left to try
+                # we check for 3 because 1 is assumed to be taken by the previous room, we subtract that from our 4 directions
+                if len(dirs_tried) >= 3:
+                    init_world()
+                    break
                 
                 # Check if random direction has already been tried
                 # if so, loop again and get another rand_dir
                 if rand_dir in dirs_tried:
                     continue
 
-                # If there are three or more directions in our tried list, that means there are no more directions left to try
-                # we check for 3 because 1 is assumed to be taken by the previous room, we subtract that from our 4 directions
-                if len(dirs_tried) >= 3:
-                    init_world()
                 
                 # Check direction and check if valid [y][x] positition
                 # since we are generating a room north, check if we can move any higher on the grid
                 if rand_dir == "n":
-                    
                     # Check if there is room here
                     if check_valid_spot(rand_dir, previous_room.x, previous_room.y) == True:
                         # If so, check if we have a minimum available spots to create a room
@@ -315,12 +319,12 @@ class World:
         # Print string
         print(str)
 
-Room.objects.all().delete()
 w = World()
 num_rooms = 100
 width = 20
 height = 20
 w.generate_rooms(width, height, num_rooms)
+w.print_rooms()
 
 players=Player.objects.all()
 for p in players:
